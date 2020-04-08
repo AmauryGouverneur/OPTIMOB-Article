@@ -1,0 +1,128 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2512
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;\red34\green139\blue34;}
+{\*\expandedcolortbl;;\csgenericrgb\c13333\c54510\c13333;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww14200\viewh16580\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs20 \cf0 n_draw_comp = 100000; \cf2 %number of draws to build the histogram
+\fs24 \cf0 \
+
+\fs20 n_part_fine = 1000;
+\fs24 \
+
+\fs20 n_measurements = 21; \cf2 %number of observations 
+\fs24 \cf0 \
+
+\fs20 T = 60; \cf2 %number of time steps 
+\fs24 \cf0 \
+
+\fs20 \cf2  
+\fs24 \cf0 \
+
+\fs20 n_part = 200; \cf2 %number of particles 250
+\fs24 \cf0 \
+
+\fs20 n_draw = 100; \cf2 %number of draws for the MC MSE estimator 100
+\fs24 \cf0 \
+
+\fs20 \cf2  
+\fs24 \cf0 \
+
+\fs20 pop_size = 45; \cf2 %population size of the GA algorithm 
+\fs24 \cf0 \
+
+\fs20 pop_size_SA = floor(pop_size/1.5);
+\fs24 \
+
+\fs20 max_gen = 25;
+\fs24 \
+
+\fs20 n_eval = pop_size*max_gen;
+\fs24 \
+
+\fs20  
+\fs24 \
+
+\fs20 GF_eval_max = (T+1);
+\fs24 \
+
+\fs20 GF_eval_min = (GF_eval_max-n_measurements+1);
+\fs24 \
+
+\fs20 n_eval_GF = (GF_eval_max+GF_eval_min)*(GF_eval_max-GF_eval_min+1)/2;
+\fs24 \
+
+\fs20 ratio_GF = sqrt(n_eval/n_eval_GF)*sqrt(1.8);
+\fs24 \
+
+\fs20 n_part_GF = round(n_part*ratio_GF);
+\fs24 \
+
+\fs20 n_draw_GF = round(n_draw*ratio_GF);
+\fs24 \
+
+\fs20  
+\fs24 \
+
+\fs20 GB_eval_max = (T+1);
+\fs24 \
+
+\fs20 GB_eval_min = (n_measurements+1);
+\fs24 \
+
+\fs20 n_eval_GB = (GB_eval_max+GB_eval_min)*(GB_eval_max-GB_eval_min+1)/2;
+\fs24 \
+
+\fs20 ratio_GB = sqrt(n_eval/(n_eval_GB*2));
+\fs24 \
+
+\fs20 n_part_GB = round(n_part*ratio_GB);
+\fs24 \
+
+\fs20 n_draw_GB = round(n_draw*ratio_GB);
+\fs24 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardeftab720\pardirnatural\partightenfactor0
+\cf0 \
+\
+meas_GB = 1     3     6     7    12    20    21    23    25    33    35    36    37    41    42    45    46    51    53    57    60\
+\
+GB computations completed, time elapsed = 199 sec\
+GF computations started\
+\
+meas_GF = 1     2     4    11    16    20    23    24    25    31    32    33    36    38    41    45    46    50    53    59    60\
+\
+GF computations completed, time elapsed = 166 sec\
+SA computations started\
+fraction of changes= 0.319\
+\
+meas_SA = 1     3     9    10    11    12    16    19    24    29    33    36    38    40    43    44    46    49    53    56    59\
+\
+meas_GA =   1     2     4     7    11    12    15    19    20    24    25    32    33    38    41    45    49  53    54    57    59\
+\
+meas_RT =   1     2     3     7     9    12    15    17    19    23    24    33    38    39    41    44    50  53    54    56    58\
+\
+SA computations completed, time elapsed = 195 sec\
+GA computations started\
+ \
+GA computations started\
+GA computations completed, time elapsed = 207 sec\
+RT computations started\
+RT computations completed, time elapsed = 206 sec\
+\
+2. Comparison of the performances of the methods by running 100000 draws\
+\
+Comparison computations started\
+Comparison computations completed, time elapsed = 1795 sec\
+\
+GA : average gain = 25.5 %\
+GA : fraction of positive gain = 87.2 %\
+SA : average gain = 18.0 %\
+SA : fraction of positive gain = 79.0 %\
+GF : average gain = 19.0 %\
+GF : fraction of positive gain = 78.9 %\
+GB : average gain = 13.3 %\
+GB : fraction of positive gain = 74.6 %\
+RT : average gain = 13.2 %\
+RT : fraction of positive gain = 73.7 %}
