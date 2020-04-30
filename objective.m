@@ -1,4 +1,4 @@
-function z_j = objective(x_j)
+function z_j = objective(x_j,t_j)
 % The function "objective" return an objective vector z_j of x_j
 % according  to a discrete stochastic nonlinear dynamical systems. 
 % 
@@ -15,6 +15,8 @@ function z_j = objective(x_j)
 % 
 % Date : 30/01/20
 % Author : Amaury Gouverneur & Antoine Aspeel
+% z_j = x_j;
+T = size(x_j,2)-1;
+z_j = x_j(1,:).*sin((t_j:T+t_j).*x_j(2,:) ) + x_j(3,:);
 
-z_j = x_j;
 end

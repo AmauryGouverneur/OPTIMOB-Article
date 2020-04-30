@@ -16,7 +16,7 @@ end
 visualizationFlag=0;       % 0 => don't visualize bit frequencies
                            % 1 => visualize bit frequencies
 
-verboseFlag=0;             % 1 => display details of each generation
+verboseFlag=1;             % 1 => display details of each generation
                            % 0 => run quietly
 convergenceFlag=0;         % 1 => plot convergence curve
                            % 0 => does not
@@ -89,7 +89,7 @@ avgCostHist = -avGBitnessHist;
 minCostHist = -maxFitnessHist;
 
 meas_GB = elite;
-cost_GB = -maxFitnessHist(end);
+cost_GB = MC_MSE_estimator(elite,T,500,200);
 
 %% plot and print
 if convergenceFlag

@@ -16,7 +16,7 @@ end
 visualizationFlag=0;       % 0 => don't visualize bit frequencies
                            % 1 => visualize bit frequencies
 
-verboseFlag=0;             % 1 => display details of each generation
+verboseFlag=1;             % 1 => display details of each generation
                            % 0 => run quietly
 convergenceFlag=0;         % 1 => plot convergence curve
                            % 0 => does not
@@ -36,11 +36,11 @@ maxFitnessHist=zeros(1,n_measurements);
 % To identify copies in population
 elite = [] ; 
 if online 
-    candidates = (1:T);
+    initial_candidates = (1:T);
 else 
-    candidates = (0:T);
+    initial_candidates = (0:T);
 end
-
+candidates = initial_candidates;
 pop = candidates'; 
 while length(elite)<n_measurements  
     
@@ -48,13 +48,14 @@ while length(elite)<n_measurements
     % evaluate the fitness of the population. The vector of fitness values 
     % returned  must be of dimensions 1 x popSize.
     gen = length(elite)+1;
-    popSize = length(candidates);
     fitnessVals=localFitnessFunction(pop);
     [maxFitnessHist(1,gen),maxIndex]=max(fitnessVals);
     avgFitnessHist(1,gen)=mean(fitnessVals,'omitnan');
 
     elite = pop(maxIndex,:);
-     
+    candidates_measurement_times = ones(1,length(initial_candidates)); 
+    candidates_measurement_times(elite+1) = 0;
+    candidates = initial_candidates(ones(1,length(initial_candidates)) == candidates_measurement_times);
     % display the generation number, the average Fitness of the population,
     % and the maximum fitness of any individual in the population
     % Conditionally perform bit-frequency visualization
@@ -64,6 +65,7 @@ while length(elite)<n_measurements
             num2str(maxFitnessHist(1,gen),'%3.3f') ]);
     end
     if visualizationFlag
+        popSize = length(candidates);
         figure(1)
         set (gcf, 'color', 'w');
         hold off
@@ -90,7 +92,7 @@ avgCostHist = -avgFitnessHist;
 minCostHist = -maxFitnessHist;
 
 meas_GF = elite;
-cost_GF = -maxFitnessHist(end);
+cost_GF = MC_MSE_estimator(elite,T,1000,1000);
 
 %% plot and print
 if convergenceFlag

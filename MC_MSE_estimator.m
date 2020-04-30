@@ -69,7 +69,7 @@ for j = 1:n_draw
             disp('All particles have w = 0')
             break
         else
-            mse = mse + 1/n_draw*mean((objective(x_j)-objective(tau_j)).^2,2);          
+            mse = mse + 1/n_draw*mean((objective(x_j,0)-objective(tau_j,0)).^2,2);          
         end
 end
 end

@@ -10,11 +10,26 @@ function part = initialization(n_draw,y,meas_1_j)
 % 
 % Date : 23/01/20
 % Author : Amaury Gouverneur & Antoine Aspeel
+
+a_minus = 8.8;
+a_plus = 24;
+
+omega_minus = 0.13*2;
+omega_plus = 0.21*2;
+
+b_minus = -5.8;
+b_plus = 5.8;
+
+minus = [a_minus;omega_minus;b_minus];
+plus = [a_plus;omega_plus;b_plus];
+
 if nargin == 1
-    part = randn(1,n_draw)*5 ; 
+    %part = randn(1,n_draw)*5 ; 
+    part = [unifrnd(minus(1),plus(1),[1,n_draw]);unifrnd(minus(2),plus(2),[1,n_draw]);unifrnd(minus(3),plus(3),[1,n_draw])];
 else
     if meas_1_j == 0 
-        part = randn(1,n_draw)*5 ;
+        %part = randn(1,n_draw)*5 ;
+        part = [unifrnd(minus(1),plus(1),[1,n_draw]);unifrnd(minus(2),plus(2),[1,n_draw]);unifrnd(minus(3),plus(3),[1,n_draw])];
     else 
         t_j = meas_1_j(end);
         index_t_j = t_j + 1;

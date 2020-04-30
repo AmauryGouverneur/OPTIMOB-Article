@@ -18,8 +18,12 @@ function y_j = measurements(x_j,T,t_j)
 % 
 % Date : 30/01/20
 % Author : Amaury Gouverneur & Antoine Aspeel 
+  v_j =  randn(1,T+1) ;
+% v_j = randn(1,T+1).*(sin(0.25*(t_j+0:t_j+T))+2);
+% y_j = x_j.^2/20 + v_j ; 
 
-v_j = randn(1,T+1).*(sin(0.25*(t_j+0:t_j+T))+2);
-y_j = x_j.^2/20 + v_j ; 
+%y_j = x_j(1,:).*sin(x_j(2,:)) + x_j(3,:) + v_j;
+y_j = x_j(1,:).*sin((t_j:T+t_j).*x_j(2,:) ) + x_j(3,:)+ v_j;
+
 
 end

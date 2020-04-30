@@ -1,10 +1,5 @@
 function [meas_SA,cost_SA,avgCostHist,minCostHist] = SA_algo(n_measurements,T,pop_size,max_gen,n_part,n_draw,y,meas_1_j)
-%%Simulated Annealing algorithm
-
-if nargin < 6 && nargin > 4
-    n_part = 250; %number of particles in the particle filter
-    n_draw = 100; %number of draws in the MC
-end
+%Simulated Annealing algorithm
 if nargin < 8 
     online = false ;
     meas_1_j = 0;
@@ -16,30 +11,20 @@ end
 len=n_measurements;        % The length of the genomes  
 popSize=pop_size;          % The size of the population (must be an even number)
 maxGens=max_gen;                % The maximum number of generations allowed in a run
-probMutation=0.3;        % The mutation probability (per bit)
+probMutation=ceil(0.2*n_measurements)/n_measurements;        % The mutation probability (per bit)
 
 visualizationFlag=0;       % 0 => don't visualize bit frequencies
                            % 1 => visualize bit frequencies
 
-verboseFlag=0;             % 1 => display details of each generation
+verboseFlag=1;             % 1 => display details of each generation
                            % 0 => run quietly
 convergenceFlag=0;         % 1 => plot convergence curve
                            % 0 => does not
-
-useMaskRepositoriesFlag=0; % 1 => draw uniform mutation masks from 
-                           %      a pregenerated repository of randomly generated bits. 
-                           %      Significantly improves the speed of the code with
-                           %      no apparent changes in the behavior of
-                           %      the SSA
-                           % 0 => generate uniform crossover and mutation
-                           %      masks on the fly. Slower.
 
 % pre-generate two ?repositories? of random binary digits from which the  
 % the masks used in mutation and uniform crossover will be picked. 
 % maskReposFactor determines the size of these repositories.
 
-maskReposFactor=5;
-mutmaskRepos=rand(popSize,(len+1)*maskReposFactor)<probMutation;
 temperature = 20;
 
 % preallocate vectors for recording the average and maximum fitness in each
@@ -47,6 +32,7 @@ temperature = 20;
 avgFitnessHist=zeros(1,maxGens+1);
 maxFitnessHist=zeros(1,maxGens+1);
 rateAcceptanceHist=zeros(1,maxGens+1);
+rateAcceptanceHist_Lowering=zeros(1,maxGens+1);
 
 % the population is a popSize by len matrix of randomly generated boolean
 % values
@@ -68,13 +54,14 @@ while gen<=maxGens
     % evaluate the fitness of the population. The vector of fitness values 
     % returned  must be of dimensions 1 x popSize.
     counter = 0; 
+    counter_Lowering =0;
     fitnessVals=localFitnessFunction(pop);
-    
     
     if gen>0 && maxFitnessHist(1,gen) > max(fitnessVals)
         maxFitnessHist(1,gen+1)= maxFitnessHist(1,gen);
     else 
         [maxFitnessHist(1,gen+1),maxIndex]=max(fitnessVals);
+        meas_SA = sort(pop(maxIndex,:));
     end
     avgFitnessHist(1,gen+1)=mean(fitnessVals,'omitnan');
      
@@ -101,14 +88,9 @@ while gen<=maxGens
         drawnow;
     end
     
-    % implement mutations
-    if useMaskRepositoriesFlag
-        temp=floor(rand*len*(maskReposFactor-1));
-        masks=mutmaskRepos(:,temp+1:temp+len);
-    else
-        masks=rand(popSize, len)< probMutation*ones(popSize,len);
-    end
-    % masks(i,j)==1 iff pop(i,j) has to be mutated (0 elsewhere)
+    
+    masks=rand(popSize, len)< probMutation*ones(popSize,len);
+    
     if online 
         pop_mutation = sort((1-masks).*pop + masks.*(unidrnd(T,popSize,len)),2);
     else 
@@ -136,8 +118,9 @@ while gen<=maxGens
             if rand < exp(-(fitnessVals(i)-fitnessVals_mutation(i))/temperature)
                 if (pop(i,:)~=pop_mutation(i,:))
                     pop(i,:) = pop_mutation(i,:);
-                    counter = counter+1;
                 end
+                counter = counter+1;
+                counter_Lowering = counter_Lowering+1;
             end
         end
     end
@@ -146,26 +129,28 @@ while gen<=maxGens
     pop = sort(pop,2);
     pop = sortrows(pop); % to identify copies in population
     
-    temperature = temperature*0.8;
+    temperature = temperature*0.85;
     rateAcceptanceHist(gen+1)=counter/pop_size;
+    rateAcceptanceHist_Lowering(gen+1)=counter_Lowering/pop_size;
     if verboseFlag
         display(['gen=' num2str(gen,'%.3d') '   avgFitness=' ...
             num2str(avgFitnessHist(1,gen+1),'%3.3f') '   maxFitness=' ...
-            num2str(maxFitnessHist(1,gen+1),'%3.3f') '   rateAcceptanceHist=' ...
-            num2str(rateAcceptanceHist(1,gen+1),'%3.3f') '   temperature=' num2str(temperature,'%3.3f')]);
+            num2str(maxFitnessHist(1,gen+1),'%3.3f') '   rateAcc=' ...
+            num2str(rateAcceptanceHist(1,gen+1),'%3.3f') '   rateAcc=' num2str(rateAcceptanceHist_Lowering(1,gen+1),'%3.3f') '   temperature=' num2str(temperature,'%3.3f')]);
     end
     gen = gen+1; 
 end
 
 display(['fraction of changes= ' num2str(sum(rateAcceptanceHist)/maxGens,'%3.3f')]);
+display(['fraction of lowering changes= ' num2str(sum(rateAcceptanceHist_Lowering)/maxGens,'%3.3f')]);
+
 avgCostHist = -avgFitnessHist;
 minCostHist = -maxFitnessHist;
 
-meas_SA = sort(pop(maxIndex,:));
 cost_SA = -maxFitnessHist(end);
 
 
-%% plot and print
+% plot and print
 if convergenceFlag
     figure
     set(gcf,'Color','w');
