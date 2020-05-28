@@ -1,17 +1,31 @@
-function [meas_RT,cost_RT,avgCostHist_RT,minCostHist_RT] = random_trials(T,n_measurements, pop_size, n_part, n_draw)
+function [meas_RT,cost_RT,avgCostHist_RT,minCostHist_RT] = random_trials(T,n_measurements, pop_size, n_part, n_draw,measurements_spacing,y,meas_1_j)
 
-if nargin < 5
-    n_part = 250; %number of particles in the particle filter
-    n_draw = 100; %number of draws in the MC
+if nargin < 6
+    measurements_spacing = 1;
+end
+
+if nargin < 8 
+    online = false ;
+    meas_1_j = 0;
+    y = 0;
+else
+    online = true ;
 end
 
 len=n_measurements;                     % The length of the genomes  
 popSize=pop_size;           % The size of the population (must be an even number)
-
 pop = zeros(popSize,len);
-for i=1:popSize
-    pop(i,:) = sort(randperm(T+1,len)-1);
+
+if online 
+    accessible_meas = measurements_spacing:measurements_spacing:T;
+else 
+    accessible_meas = 0:measurements_spacing:T;
 end
+
+for i=1:popSize
+    pop(i,:) = sort(accessible_meas(randperm(length(accessible_meas),len)));
+end
+
 
 % To identify copies in population
 pop = sortrows(pop);
@@ -54,7 +68,11 @@ end
         %parfor j = 1:length(indFirstCopy)
         for j = 1:length(indFirstCopy)
             meas = firstMeas(j,:);
-            firstFitnesses(j) = - MC_MSE_estimator(meas,T,n_draw,n_part);
+             if online
+                firstFitnesses(j)  = - MC_MSE_estimator(meas,T,n_draw,n_part,y,meas_1_j);
+            else 
+                firstFitnesses(j)  = - MC_MSE_estimator(meas,T,n_draw,n_part);
+             end            
         end
         
         % copy the fitnesses for similar individuals

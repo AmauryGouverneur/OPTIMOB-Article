@@ -1,11 +1,10 @@
-function [meas_GB,cost_GB,avgCostHist,minCostHist] = greedy_backward_algo(n_measurements,T,n_part,n_draw,y,meas_1_j)
+function [meas_GB,cost_GB,avgCostHist,minCostHist] = greedy_backward_algo(n_measurements,T,n_part,n_draw,measurements_spacing,y,meas_1_j)
 %%Simulated Annealing algorithm
 
-if nargin < 4 && nargin > 1
-    n_part = 250; %number of particles in the particle filter
-    n_draw = 100; %number of draws in the MC
+if nargin < 5
+    measurements_spacing = 1;
 end
-if nargin < 5 
+if nargin < 6 
     online = false ;
     meas_1_j = 0;
     y = 0;
@@ -16,7 +15,7 @@ end
 visualizationFlag=0;       % 0 => don't visualize bit frequencies
                            % 1 => visualize bit frequencies
 
-verboseFlag=1;             % 1 => display details of each generation
+verboseFlag=0;             % 1 => display details of each generation
                            % 0 => run quietly
 convergenceFlag=0;         % 1 => plot convergence curve
                            % 0 => does not
@@ -30,11 +29,13 @@ convergenceFlag=0;         % 1 => plot convergence curve
 
 
 % To identify copies in population
+
 if online 
-    elite = (1:T);
+    elite = measurements_spacing:measurements_spacing:T;
 else 
-    elite = (0:T);
+    elite = 0:measurements_spacing:T;
 end
+
 % preallocate vectors for recording the average and maximum fitness in each
 % generation
 

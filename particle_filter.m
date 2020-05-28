@@ -31,17 +31,18 @@ function [tau_j,part] = particle_filter(y_j,measurement_times,T,part,t_j)
 %
 % Date : 30/01/20
 % Author : Amaury Gouverneur & Antoine Aspeel
+
 n_part = size(part,2);
-size_part = size(part,1);
-tau_j = zeros(size_part,T+1);
+size_objective = size(objective(part(:,1),0),1);
+tau_j = zeros(size_objective,T+1);
 
 if measurement_times(0+1)
         w = weighting(y_j,part,0,t_j); % weighting
-        tau_j(:,1) = part*w/sum(w); % estimation
+        tau_j(:,1) = (objective_part(part,t_j)*w)/sum(w); % estimation
         ind = randsample(n_part,n_part,true,w);
         part = part(:,ind);
 else 
-    tau_j(:,1) = sum(part,2)/n_part;
+    tau_j(:,1) = mean(objective_part(part,t_j));
 end
 
 for t = 1:T
@@ -50,17 +51,18 @@ for t = 1:T
     index_t = t+1; 
     if measurement_times(index_t)
         w = weighting(y_j,part,t,t_j);
-        tau_j(:,index_t) = part*w/sum(w); 
+        tau_j(:,index_t) = (objective_part(part,t_j+t)*w)/sum(w) ;
         %selection
         if norm(w)==0 
-            tau_j = NaN; 
-            break;
+            tau_j(:,index_t) = mean(objective_part(part,t_j+t)); 
+            %tau_j = NaN;
+            %break;
         else
             ind = randsample(n_part,n_part,true,w);
             part = part(:,ind);
         end
     else
-        tau_j(:,index_t) = sum(part,2)/n_part;
+        tau_j(:,index_t) = mean(objective_part(part,t_j+t));
     end 
 end
 

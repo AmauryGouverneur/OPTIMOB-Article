@@ -1,11 +1,10 @@
-function [meas_GF,cost_GF,avgCostHist,minCostHist] = greedy_forward_algo(n_measurements,T,n_part,n_draw,y,meas_1_j)
+function [meas_GF,cost_GF,avgCostHist,minCostHist] = greedy_forward_algo(n_measurements,T,n_part,n_draw,measurements_spacing,y,meas_1_j)
 %%Simulated Annealing algorithm
 
-if nargin < 4 && nargin > 1
-    n_part = 250; %number of particles in the particle filter
-    n_draw = 100; %number of draws in the MC
+if nargin < 5
+    measurements_spacing = 1;
 end
-if nargin < 5 
+if nargin < 6
     online = false ;
     meas_1_j = 0;
     y = 0;
@@ -16,7 +15,7 @@ end
 visualizationFlag=0;       % 0 => don't visualize bit frequencies
                            % 1 => visualize bit frequencies
 
-verboseFlag=1;             % 1 => display details of each generation
+verboseFlag=0;             % 1 => display details of each generation
                            % 0 => run quietly
 convergenceFlag=0;         % 1 => plot convergence curve
                            % 0 => does not
@@ -35,11 +34,14 @@ maxFitnessHist=zeros(1,n_measurements);
 
 % To identify copies in population
 elite = [] ; 
+
 if online 
-    initial_candidates = (1:T);
+    initial_candidates = measurements_spacing:measurements_spacing:T;
 else 
-    initial_candidates = (0:T);
+    initial_candidates = 0:measurements_spacing:T;
 end
+
+
 candidates = initial_candidates;
 pop = candidates'; 
 while length(elite)<n_measurements  
@@ -54,7 +56,7 @@ while length(elite)<n_measurements
 
     elite = pop(maxIndex,:);
     candidates_measurement_times = ones(1,length(initial_candidates)); 
-    candidates_measurement_times(elite+1) = 0;
+    candidates_measurement_times(ismember(initial_candidates,elite)) = 0;
     candidates = initial_candidates(ones(1,length(initial_candidates)) == candidates_measurement_times);
     % display the generation number, the average Fitness of the population,
     % and the maximum fitness of any individual in the population
@@ -92,7 +94,7 @@ avgCostHist = -avgFitnessHist;
 minCostHist = -maxFitnessHist;
 
 meas_GF = elite;
-cost_GF = MC_MSE_estimator(elite,T,1000,1000);
+cost_GF = -maxFitnessHist(end);
 
 %% plot and print
 if convergenceFlag

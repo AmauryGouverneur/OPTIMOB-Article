@@ -21,7 +21,7 @@ v = 1;
 % v = (sin(0.25*(t_j+t))+2);
 index_t = t+1;
 %w = normpdf(y_j(index_t),(part.^2)./20,(sin(0.25*(t_j+t))+2))';
-w = normpdf(y_j(index_t),part(1,:).*sin( (t_j+t)*part(2,:)) + part(3,:),v )';
+w = normpdf(y_j(index_t),objective_part(part,t_j+t),v )';
 
 
 end

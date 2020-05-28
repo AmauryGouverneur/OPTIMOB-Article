@@ -14,8 +14,8 @@ function part = initialization(n_draw,y,meas_1_j)
 a_minus = 8.8;
 a_plus = 24;
 
-omega_minus = 0.13*2;
-omega_plus = 0.21*2;
+omega_minus = 0.13*2*2;
+omega_plus = 0.21*2*2;
 
 b_minus = -5.8;
 b_plus = 5.8;
@@ -36,8 +36,10 @@ else
         y_j = y(1:index_t_j);
         measurement_times = zeros(1,t_j+1); 
         measurement_times(meas_1_j+1) = 1;
-        part = initialization(n_draw);
-        [~,part] = particle_filter(y_j,measurement_times,t_j,part,0)  ; 
+        n_part = max(n_draw,10000);
+        part = initialization(n_part);
+        [~,part] = particle_filter(y_j,measurement_times,t_j,part,0)  ;
+        part = part(:,1:n_draw);
     end
 end
 

@@ -35,8 +35,8 @@ a_minus = 8.8;
 a_plus = 24;
 sigma_a = 1;
 
-omega_minus = 0.13*2;
-omega_plus = 0.21*2;
+omega_minus = 0.13*2*2;
+omega_plus = 0.21*2*2;
 
 sigma_omega = 0;
 
@@ -48,9 +48,6 @@ minus = [a_minus;omega_minus;b_minus];
 plus = [a_plus;omega_plus;b_plus];
 sigmas = [sigma_a;sigma_omega;sigma_b];
 
-if nargin ==1 
-    x0 = [unifrnd(minus(1),plus(1));unifrnd(minus(2),plus(2));unifrnd(minus(3),plus(3))];
-end
 
 x = zeros(3,T+1);
 x(:,0+1) = x0;
@@ -59,11 +56,7 @@ for t = 0:T-1
     index_t = t+1;
     noise =  randn(3,1).*sigmas;
     x(:,index_t+1) = clip(x(:,index_t)+noise,minus,plus);
+    %x(:,index_t+1) = clip(x(:,index_t)+noise,minus,plus);
 end
 
-end
-
-function res = clip(x,a,b)
-
-res = x.*(x>a & x<b) + a.*(x<=a) + b.*(x>=b);
 end

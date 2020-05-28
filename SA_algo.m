@@ -1,5 +1,9 @@
-function [meas_SA,cost_SA,avgCostHist,minCostHist] = SA_algo(n_measurements,T,pop_size,max_gen,n_part,n_draw,y,meas_1_j)
+function [meas_SA,cost_SA,avgCostHist,minCostHist] = SA_algo(n_measurements,T,pop_size,max_gen,n_part,n_draw,measurements_spacing,y,meas_1_j,meas_j_T)
 %Simulated Annealing algorithm
+if nargin < 7
+    measurements_spacing = 1;
+end
+
 if nargin < 8 
     online = false ;
     meas_1_j = 0;
@@ -11,12 +15,12 @@ end
 len=n_measurements;        % The length of the genomes  
 popSize=pop_size;          % The size of the population (must be an even number)
 maxGens=max_gen;                % The maximum number of generations allowed in a run
-probMutation=ceil(0.2*n_measurements)/n_measurements;        % The mutation probability (per bit)
-
+probMutation=ceil(0.25*n_measurements)/n_measurements;        % The mutation probability (per bit)
+probChanges = 1;
 visualizationFlag=0;       % 0 => don't visualize bit frequencies
                            % 1 => visualize bit frequencies
 
-verboseFlag=1;             % 1 => display details of each generation
+verboseFlag=0;             % 1 => display details of each generation
                            % 0 => run quietly
 convergenceFlag=0;         % 1 => plot convergence curve
                            % 0 => does not
@@ -25,8 +29,7 @@ convergenceFlag=0;         % 1 => plot convergence curve
 % the masks used in mutation and uniform crossover will be picked. 
 % maskReposFactor determines the size of these repositories.
 
-temperature = 20;
-
+temperature = 10;
 % preallocate vectors for recording the average and maximum fitness in each
 % generation
 avgFitnessHist=zeros(1,maxGens+1);
@@ -38,13 +41,33 @@ rateAcceptanceHist_Lowering=zeros(1,maxGens+1);
 % values
 
 pop = zeros(popSize,len);
-for i=1:popSize
-    if online 
-        pop(i,:) = sort(randperm(T,len));
-    else 
-        pop(i,:) = sort(randperm(T+1,len)-1);
+
+if online 
+    accessible_meas = measurements_spacing:measurements_spacing:T;
+    pop = ones(popSize,1)*meas_j_T;
+    
+    masks=rand(popSize, len)<probChanges;    
+    
+    if n_measurements == 1
+            pop = sort((1-masks).*pop + masks.*(accessible_meas(unidrnd(length(accessible_meas),popSize,len)))',2);
+    else
+        % masks(i,j)==1 iff pop(i,j) has to be mutated (0 elsewhere) 
+        pop = sort((1-masks).*pop + masks.*(accessible_meas(unidrnd(length(accessible_meas),popSize,len))),2);
+        % Replace duplicates measurements and sort
+        %parfor i=1:popSize
+        for i=1:popSize
+            pop(i,:) = replace_duplicates(pop(i,:),accessible_meas);
+        end
+    end
+else 
+    accessible_meas = 0:measurements_spacing:T;
+    for i=1:popSize
+        pop(i,:) = sort(accessible_meas(randperm(length(accessible_meas),len)));
     end
 end
+
+
+
 
 % To identify copies in population
 pop = sortrows(pop);
@@ -74,11 +97,11 @@ while gen<=maxGens
         set (gcf, 'color', 'w');
         hold off
         if online
-            histogram(pop,1:T,'Normalization','countdensity'); hold on;
+            histogram(pop,accessible_meas,'Normalization','countdensity'); hold on;
             plot(pop(maxIndex,:)+0.5,0*pop(maxIndex,:)+popSize,'.','Markersize',25);
-            axis([1 T 0 popSize]);
+            axis([measurements_spacing T 0 popSize]);
         else 
-            histogram(pop,0:T,'Normalization','countdensity'); hold on;
+            histogram(pop,accessible_meas,'Normalization','countdensity'); hold on;
             plot(pop(maxIndex,:)+0.5,0*pop(maxIndex,:)+popSize,'.','Markersize',25);
             axis([0 T 0 popSize]);
         end
@@ -90,21 +113,19 @@ while gen<=maxGens
     
     
     masks=rand(popSize, len)< probMutation*ones(popSize,len);
-    
-    if online 
-        pop_mutation = sort((1-masks).*pop + masks.*(unidrnd(T,popSize,len)),2);
-    else 
-        pop_mutation = sort((1-masks).*pop + masks.*(unidrnd(T+1,popSize,len)-1),2);
-    end
-    % Replace duplicates measurements and sort
-    %parfor i=1:popSize
-    for i=1:popSize
-        if online 
-            pop_mutation(i,:) = replace_duplicates(pop_mutation(i,:),T);
-        else 
-            pop_mutation(i,:) = replace_duplicates(pop_mutation(i,:),T);
+    % masks(i,j)==1 iff pop(i,j) has to be mutated (0 elsewhere) 
+
+    if n_measurements == 1
+        pop_mutation = sort((1-masks).*pop + masks.*(accessible_meas(unidrnd(length(accessible_meas),popSize,len)))',2);
+    else
+        pop_mutation = sort((1-masks).*pop + masks.*(accessible_meas(unidrnd(length(accessible_meas),popSize,len))),2);
+        % Replace duplicates measurements and sort
+        %parfor i=1:popSize
+        for i=1:popSize
+            pop_mutation(i,:) = replace_duplicates(pop_mutation(i,:),accessible_meas);
         end
     end
+    
     pop_mutation = sort(pop_mutation,2);
     pop_mutation = sortrows(pop_mutation);
     
@@ -129,7 +150,7 @@ while gen<=maxGens
     pop = sort(pop,2);
     pop = sortrows(pop); % to identify copies in population
     
-    temperature = temperature*0.85;
+    temperature = temperature*0.8;
     rateAcceptanceHist(gen+1)=counter/pop_size;
     rateAcceptanceHist_Lowering(gen+1)=counter_Lowering/pop_size;
     if verboseFlag

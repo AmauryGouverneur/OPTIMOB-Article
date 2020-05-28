@@ -26,8 +26,8 @@ a_minus = 8.8;
 a_plus = 24;
 sigma_a = 1;
 
-omega_minus = 0.13*2;
-omega_plus = 0.21*2;
+omega_minus = 0.13*2*2;
+omega_plus = 0.21*2*2;
 
 sigma_omega = 0.005;
 

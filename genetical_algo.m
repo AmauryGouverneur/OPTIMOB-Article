@@ -1,4 +1,4 @@
-function [meas_GA,cost_GA,avgCostHist,minCostHist] = genetical_algo(n_measurements,T,pop_size,max_gen,n_part,n_draw,y,meas_1_j)
+function [meas_GA,cost_GA,avgCostHist,minCostHist] = genetical_algo(n_measurements,T,pop_size,max_gen,n_part,n_draw,measurements_spacing,y,meas_1_j,meas_j_T)
 % SpeedyGA is a vectorized implementation of a Simple Genetic Algorithm in Matlab
 % Version 1.3
 % Copyright (C) 2007, 2008, 2009  Keki Burjorjee
@@ -25,23 +25,23 @@ function [meas_GA,cost_GA,avgCostHist,minCostHist] = genetical_algo(n_measuremen
 %  Genetic Algorithms, MIT Press, 1996). Selection is fitness
 %  proportionate.
 
-if nargin < 6 && nargin > 4
-    n_part = 250; %number of particles in the particle filter
-    n_draw = 100; %number of draws in the MC
-end
+if nargin <7 
+    measurements_spacing= 1 ;
+end 
 if nargin < 8 
     online = false ;
     meas_1_j = 0;
     y = 0;
 else
-    online = true ;
+    online = true  ;
 end
 
 len=n_measurements;        % The length of the genomes  
 popSize=pop_size;          % The size of the population (must be an even number)
 maxGens=max_gen;                % The maximum number of generations allowed in a run
 probCrossover=1;           % The probability of crossing over. 
-probMutation=0.003;        % The mutation probability (per bit)
+probMutation=0.003;        % The mutation probability (per bit) 0.003
+probChanges = 1 ; 
 sigmaScalingFlag=1;        % Sigma Scaling is described on pg 168 of M. Mitchell's
                            % GA book. It often improves GA performance.
 sigmaScalingCoeff=1;       % Higher values => less fitness pressure 
@@ -82,20 +82,50 @@ maxFitnessHist=zeros(1,maxGens+1);
 
 % the population is a popSize by len matrix of randomly generated boolean
 % values
-
 pop = zeros(popSize,len);
-for i=1:popSize
-    if online 
-        pop(i,:) = sort(randperm(T,len));
-    else 
-        pop(i,:) = sort(randperm(T+1,len)-1);
+
+if online 
+    accessible_meas = measurements_spacing:measurements_spacing:T;
+    pop = ones(popSize,1)*meas_j_T;
+    
+    masks=rand(popSize, len)<probChanges;    
+    
+    if n_measurements == 1
+            pop = sort((1-masks).*pop + masks.*(accessible_meas(unidrnd(length(accessible_meas),popSize,len)))',2);
+    else
+        % masks(i,j)==1 iff pop(i,j) has to be mutated (0 elsewhere) 
+        pop = sort((1-masks).*pop + masks.*(accessible_meas(unidrnd(length(accessible_meas),popSize,len))),2);
+        % Replace duplicates measurements and sort
+        %parfor i=1:popSize
+        for i=1:popSize
+            pop(i,:) = replace_duplicates(pop(i,:),accessible_meas);
+        end
     end
+    
+
+    % to identify copies in population
+    
+else 
+    accessible_meas = 0:measurements_spacing:T;
+    for i=1:popSize
+        pop(i,:) = sort(accessible_meas(randperm(length(accessible_meas),len)));
+    end   
 end
 
+% for i=1:popSize
+%         pop(i,:) = sort(accessible_meas(randperm(length(accessible_meas),len)));
+% end
+
 % To identify copies in population
+pop = sort(pop,2);
 pop = sortrows(pop);
+
+hist_pop_1 = hist(pop(:,1));
+[~,index_max] = max(hist_pop_1);
+aggrement_first_meas = hist_pop_1(index_max)/popSize;
 gen = 0 ; 
-while gen<=maxGens  
+while gen<=maxGens && (not(online) || (aggrement_first_meas<0.75 || gen<5))
+%while gen<=maxGens
     % evaluate the fitness of the population. The vector of fitness values 
     % returned  must be of dimensions 1 x popSize.
     fitnessVals=localFitnessFunction(pop);
@@ -184,7 +214,7 @@ while gen<=maxGens
         secondKids(i,:)=secondKid;
     end
     pop=sort([firstKids; secondKids],2);
-    
+
     % implement mutations
     if useMaskRepositoriesFlag
         temp=floor(rand*len*(maskReposFactor-1));
@@ -192,24 +222,25 @@ while gen<=maxGens
     else
         masks=rand(popSize, len)<probMutation;
     end
-    % masks(i,j)==1 iff pop(i,j) has to be mutated (0 elsewhere)
-    if online 
-        pop = sort((1-masks).*pop + masks.*(unidrnd(T,popSize,len)),2);
-    else 
-        pop = sort((1-masks).*pop + masks.*(unidrnd(T+1,popSize,len)-1),2);
-    end
-    
-    % Replace duplicates measurements and sort
+
+    if n_measurements == 1
+            pop = sort((1-masks).*pop + masks.*(accessible_meas(unidrnd(length(accessible_meas),popSize,len)))',2);
+    else
+    % masks(i,j)==1 iff pop(i,j) has to be mutated (0 elsewhere) 
+    pop = sort((1-masks).*pop + masks.*(accessible_meas(unidrnd(length(accessible_meas),popSize,len))),2);
+        % Replace duplicates measurements and sort
     %parfor i=1:popSize
-    for i=1:popSize
-        if online 
-            pop(i,:) = replace_duplicates(pop(i,:),T);
-        else 
-            pop(i,:) = replace_duplicates(pop(i,:),T+1);
+        for i=1:popSize
+            pop(i,:) = replace_duplicates(pop(i,:),accessible_meas);
         end
     end
+    
     pop = sort(pop,2);
     pop = sortrows(pop); % to identify copies in population
+    
+    hist_pop_1 = hist(pop(:,1));
+    [~,index_max] = max(hist_pop_1);
+    aggrement_first_meas = hist_pop_1(index_max)/popSize;
     
     gen = gen+1; 
 end

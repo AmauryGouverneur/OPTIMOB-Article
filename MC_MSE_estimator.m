@@ -43,33 +43,54 @@ if nargin <5
     meas_1_j = 0 ; 
     y = 0; 
 end
-x0 = initialization(n_draw,y,meas_1_j);
+%x0 = initialization(n_draw,y,meas_1_j);
 t_j = meas_1_j(end);
 
 measurement_times = zeros(1,T+1); 
 measurement_times(meas+1) = 1;
 
 mse = 0;
+%if 0
+% if y ~= 0 
+% close
+% figure
+% hold on
+% plot(0:length(y)-1,y);
+% ylim([floor(min(y)/5)*5 ceil(max(y)/5)*5])
+% y_limits_plot = ylim;
+% plot(meas_1_j,y_limits_plot(1)*ones(1,length(meas_1_j)),'*r')
+% end
+x0 = initialization(n_draw,y,meas_1_j);
+part = initialization(n_part,y,meas_1_j);
+
 for j = 1:n_draw
         %1.Simulation
-
         %1.1. Random motion model : X_j
-        x_j = model(T,x0(j),t_j);
+        x_j = model(T,x0(:,j),t_j);
 
         %1.2. Artificial data record Y_j
         y_j = measurements(x_j,T,t_j);
-
+        
         %2. Filtering
-        part = initialization(n_part,y,meas_1_j);
         tau_j = particle_filter(y_j,measurement_times,T,part,t_j);
-
+        %if 0 
+%         if y ~= 0 
+%         h = plot(t_j:T+t_j,tau_j,'r');
+%         h1 = plot(t_j:T+t_j,objective(x_j,t_j),'-.k');
+%         pause(0.5)
+%         delete(h)
+%         delete(h1)
+%         end
         %3. MSE computation
         if isnan(tau_j)
             mse = nan;%10^8;
+            %meas
             disp('All particles have w = 0')
             break
         else
-            mse = mse + 1/n_draw*mean((objective(x_j,0)-objective(tau_j,0)).^2,2);          
+            mse = mse + 1/n_draw*mean((objective(x_j,t_j)-tau_j).^2);          
         end
+%        mse = mse + 1/n_draw*mean((objective(x_j,t_j)-tau_j).^2);
 end
+
 end
