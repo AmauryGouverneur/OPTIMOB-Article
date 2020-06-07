@@ -20,7 +20,7 @@ probChanges = 1;
 visualizationFlag=0;       % 0 => don't visualize bit frequencies
                            % 1 => visualize bit frequencies
 
-verboseFlag=0;             % 1 => display details of each generation
+verboseFlag=1;             % 1 => display details of each generation
                            % 0 => run quietly
 convergenceFlag=0;         % 1 => plot convergence curve
                            % 0 => does not
@@ -73,7 +73,7 @@ end
 pop = sortrows(pop);
 gen = 0 ; 
 
-while gen<=maxGens  
+while gen<maxGens  
     % evaluate the fitness of the population. The vector of fitness values 
     % returned  must be of dimensions 1 x popSize.
     counter = 0; 

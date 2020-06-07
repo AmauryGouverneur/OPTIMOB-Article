@@ -1,4 +1,4 @@
-function [mse] = MC_MSE_estimator(meas,T,n_draw,n_part,y,meas_1_j)
+function [MC_mse] = MC_MSE_estimator(meas,T,n_draw,n_part,y,meas_1_j)
 % Monte Carlo estimator of the expected mean square error of a particle filter 
 % estimate of the state vector of a stochastic nonlinear dynamical systems
 % with a given set of measurements.
@@ -49,7 +49,7 @@ t_j = meas_1_j(end);
 measurement_times = zeros(1,T+1); 
 measurement_times(meas+1) = 1;
 
-mse = 0;
+mse = zeros(1,n_draw);
 %if 0
 % if y ~= 0 
 % close
@@ -63,6 +63,8 @@ mse = 0;
 x0 = initialization(n_draw,y,meas_1_j);
 part = initialization(n_part,y,meas_1_j);
 
+
+        
 for j = 1:n_draw
         %1.Simulation
         %1.1. Random motion model : X_j
@@ -70,7 +72,6 @@ for j = 1:n_draw
 
         %1.2. Artificial data record Y_j
         y_j = measurements(x_j,T,t_j);
-        
         %2. Filtering
         tau_j = particle_filter(y_j,measurement_times,T,part,t_j);
         %if 0 
@@ -88,9 +89,9 @@ for j = 1:n_draw
             disp('All particles have w = 0')
             break
         else
-            mse = mse + 1/n_draw*mean((objective(x_j,t_j)-tau_j).^2);          
+            mse(j) = mean((objective(x_j,t_j)-tau_j).^2);          
         end
 %        mse = mse + 1/n_draw*mean((objective(x_j,t_j)-tau_j).^2);
 end
-
+MC_mse = mean(mse);
 end

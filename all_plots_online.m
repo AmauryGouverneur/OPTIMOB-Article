@@ -1,22 +1,22 @@
 %% Plot function 
 close all;
 
-n_measurements = 10; %number of observations 
-T = 25; %number of time steps 
+n_measurements = 11; %number of observations 
+T = 30; %number of time steps 
 measurements_spacing = 1; 
 n_part_fine = 1000; 
 
 
-n_part = 150; %number of particles 250
-n_draw = 100; %number of draws for the MC MSE estimator 10
+n_part = 100; %number of particles 250
+n_draw = 200; %number of draws for the MC MSE estimator 10
 
-pop_size = 20; %population size of the GA algorithm 
-max_gen = 20; %maximum number of generations
+pop_size = 30; %population size of the GA algorithm 
+max_gen = 15; %maximum number of generations
 
-n_draw_comp = 500; %number of draws to realize 
+n_draw_comp = 0; %number of draws to realize 
 
 try
-    load(sprintf('here_new_GA_online_computations_%d_particles_%d_draws',n_part,n_draw));
+    load(sprintf('T30_N11_GA_online_computations_%d_particles_%d_draws',n_part,n_draw));
     n_draw_done = length(find(mse_reg));
     mse_reg = [mse_reg(1:n_draw_done),zeros(1,n_draw_comp)];
     mse_GA = [mse_GA(1:n_draw_done),zeros(1,n_draw_comp)];
@@ -44,9 +44,9 @@ for j = n_draw_done+1:n_draw_done+n_draw_comp
 x0 = initialization(1,0,0);
 x = model(T,x0,0); %True state vector we want to reconstruct using online OIMPF
 y = measurements(x,T,0);
-% Computation of the measurement times reg, GF, RT 
+% Computation of the measurement times reg, GA, GA_online 
 
-disp('GA online (+GF) computations started');
+disp('GA online (+GA) computations started');
 t_start_GA_online = tic;
 [meas_GA_online,meas_GA] = online_optimob(y,n_measurements,T,pop_size,max_gen,n_part,n_draw,measurements_spacing);
 t_elapsed_GA_online = toc(t_start_GA_online);
@@ -66,55 +66,70 @@ mse_reg(j) = mean((objective(x,0)-tau_j_reg).^2,2);
 mse_GA(j) =  mean((objective(x,0)-tau_j_GA).^2,2);
 mse_GA_online(j) =  mean((objective(x,0)-tau_j_GA_online ).^2,2);
 
-display(['GA online computations completed, mean gain =  ',num2str( (mean(mse_reg)-mean(mse_GA_online))/mean(mse_reg)*100,'%.1f %%'), 'gain apriori = ',num2str((mean(mse_reg)-mean(mse_GA))/mean(mse_reg)*100,'%.1f %%')  ,'time elapsed = ',num2str(t_elapsed_GA_online,'%.0f sec')]);
+display(['GA online computations completed, mean gain =  ',num2str( (mean(mse_reg)-mean(mse_GA_online))/mean(mse_reg)*100,'%.1f%%'), 'gain apriori = ',num2str((mean(mse_reg)-mean(mse_GA))/mean(mse_reg)*100,'%.1f%%')  ,'time elapsed = ',num2str(t_elapsed_GA_online,'%.0f sec')]);
 
-save(sprintf('here_new_GA_online_computations_%d_particles_%d_draws',n_part,n_draw),'mse_reg','mse_GA','mse_GA_online')
+save(sprintf('T30_N11_GA_online_computations_%d_particles_%d_draws',n_part,n_draw),'mse_reg','mse_GA','mse_GA_online','mse_reg_apriori','mse_error_margin_reg_apriori')
 end
+
+t_elapsed_comparison = toc(t_start_comparison);
+
+display(['Computations of ',num2str(n_draw_done, '%.0f'),'draws, time elapsed = ',num2str(t_elapsed_comparison,'%.0f sec')]);
+
+
 %% 2. Results and save
 
 n_draw_done = length(find(mse_reg));
 mse_reg = mse_reg(1:n_draw_done);
 mse_GA = mse_GA(1:n_draw_done);
 mse_GA_online = mse_GA_online(1:n_draw_done);
-
-gain_GA = (mse_reg-mse_GA)./mse_reg;
-gain_GA_online  = (mse_reg-mse_GA_online)./mse_reg; 
-
+B = 1000; 
+alpha = 0.05;
 
 
-t_elapsed_comparison = toc(t_start_comparison);
+mse_error_margin_reg = norminv(1-alpha/2)*std(mse_reg)/(sqrt(n_draw_done)*mean(mse_reg));
 
-display(['Computations of ',num2str(n_draw_done, '%.0f'),'draws, time elapsed = ',num2str(t_elapsed_comparison,'%.0f sec')]);
+gains_GA = (mse_reg-mse_GA)./mse_reg;
+gains_GA_online  = (mse_reg-mse_GA_online)./mse_reg; 
 
-positive_gain_GA = zeros(n_draw_done,1);
-positive_gain_GA(gain_GA>=0) = 1/n_draw_done;
-positive_gain_GA = sum(positive_gain_GA);
+bootstrap_error_median_GA = sort(median(gains_GA)-bootstrp(B,@median,gains_GA));
+bootstrap_error_pos_frac_gain_GA = sort(mean(gains_GA>=0)-bootstrp(B,@(x) mean(x>=0),gains_GA));
 
-display(['GA : fraction of positive gain = ' num2str(positive_gain_GA*100,'%.1f %%')]);
-display(['GA gain = ' num2str(mean(gain_GA)*100,'%.1f %%')]);
+median_error_margin_GA = [bootstrap_error_median_GA(ceil(alpha/2*B)),bootstrap_error_median_GA(ceil((1-alpha/2)*B))];
+pos_frac_error_margin_GA = [bootstrap_error_pos_frac_gain_GA(ceil(alpha/2*B)),bootstrap_error_pos_frac_gain_GA(ceil((1-alpha/2)*B))];
 
-positive_gain_GA_online = zeros(n_draw_done,1);
-positive_gain_GA_online(gain_GA_online>=0) = 1/n_draw_done;
-positive_gain_GA_online = sum(positive_gain_GA_online);
+bootstrap_error_median_GA_online = sort(median(gains_GA_online)-bootstrp(B,@median,gains_GA_online));
+bootstrap_error_pos_frac_gain_GA_online = sort(mean(gains_GA_online>=0)-bootstrp(B,@(x) mean(x>=0),gains_GA_online));
 
-display(['GA online : fraction of positive gain = ' num2str(positive_gain_GA_online*100,'%.1f %%')]);
-display(['GA online gain = ' num2str(mean(gain_GA_online)*100,'%.1f %%')]);
+median_error_margin_GA_online = [bootstrap_error_median_GA_online(ceil(alpha/2*B)),bootstrap_error_median_GA_online(ceil((1-alpha/2)*B))];
+pos_frac_error_margin_GA_online = [bootstrap_error_pos_frac_gain_GA_online(ceil(alpha/2*B)),bootstrap_error_pos_frac_gain_GA_online(ceil((1-alpha/2)*B))];
+
+
+mean_gain_error_margin_GA = norminv(1-alpha/2)*std(gains_GA)/(sqrt(n_draw_done));
+mse_error_margin_GA = norminv(1-alpha/2)*std(mse_GA)/(sqrt(n_draw_done)*mean(mse_GA));
+
+mean_gain_error_margin_GA_online = norminv(1-alpha/2)*std(gains_GA_online)/(sqrt(n_draw_done));
+mse_error_margin_GA_online = norminv(1-alpha/2)*std(mse_GA_online)/(sqrt(n_draw_done)*mean(mse_GA_online));
+
+
+display(['GA : gain on expected mse = ',num2str((1-(mean(mse_GA))/mean(mse_reg_apriori))*100,'%.1f%%'),' (+/- ',num2str((mse_error_margin_GA)/(1-mse_error_margin_reg_apriori)*100,'%.1f%%)') , ', average gain = ' num2str(mean(gains_GA)*100,'%.1f%%'),' (+/- ',num2str(mean_gain_error_margin_GA*100,'%.1f%%)'), ', median gain = ' num2str(mean((median(gains_GA)+median_error_margin_GA)*100),'%.1f%%'),' (+/- ',num2str(mean(abs(median_error_margin_GA))*100,'%.1f%%)'), ', fraction of positive gain = ' num2str(mean((mean(gains_GA>=0)+pos_frac_error_margin_GA)*100),'%.1f%%'),' (+/- ',num2str(mean(abs(pos_frac_error_margin_GA))*100,'%.1f%%)')]);
+display(['GA online : gain on expected mse = ',num2str((1-(mean(mse_GA_online))/mean(mse_reg_apriori))*100,'%.1f%%'),' (+/- ',num2str((mse_error_margin_GA_online)/(1-mse_error_margin_reg_apriori)*100,'%.1f%%)') , ', average gain = ' num2str(mean(gains_GA_online)*100,'%.1f%%'),' (+/- ',num2str(mean_gain_error_margin_GA_online*100,'%.1f%%)'), ', median gain = ' num2str(mean((median(gains_GA_online)+median_error_margin_GA_online)*100),'%.1f%%'),' (+/- ',num2str(mean(abs(median_error_margin_GA_online))*100,'%.1f%%)'), ', fraction of positive gain = ' num2str(mean((mean(gains_GA_online>=0)+pos_frac_error_margin_GA_online)*100),'%.1f%%'),' (+/- ',num2str(mean(abs(pos_frac_error_margin_GA_online))*100,'%.1f%%)')]);
 
 %% 3. Display histogram 
 if true 
 figure;    
-histogram(gain_GA,50,'Normalization','pdf')
+bins = linspace(-2,1,16);
+histogram(gains_GA,bins,'Normalization','pdf')
 xlim([-2, 1]);
-ylim([0,1.5]);
+ylim([0,2]);
 line([0 0], get(gca, 'ylim'),'Color','red');
 ylabel('probability density function','interpreter','latex')
 xlabel('relative gain, $g$','interpreter','latex')
 title('Histogram of the relative gain obtained with GA algorithm')    
     
 figure;    
-histogram(gain_GA_online,50,'Normalization','pdf')
+histogram(gains_GA_online,bins,'Normalization','pdf')
 xlim([-2, 1]);
-ylim([0,1.5]);
+ylim([0,2]);
 line([0 0], get(gca, 'ylim'),'Color','red');
 ylabel('probability density function','interpreter','latex')
 xlabel('relative gain, $g$','interpreter','latex')

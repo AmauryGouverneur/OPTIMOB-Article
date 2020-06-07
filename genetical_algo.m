@@ -124,7 +124,7 @@ hist_pop_1 = hist(pop(:,1));
 [~,index_max] = max(hist_pop_1);
 aggrement_first_meas = hist_pop_1(index_max)/popSize;
 gen = 0 ; 
-while gen<=maxGens && (not(online) || (aggrement_first_meas<0.75 || gen<5))
+while gen<maxGens && (not(online) || (aggrement_first_meas<0.75 || gen<5))
 %while gen<=maxGens
     % evaluate the fitness of the population. The vector of fitness values 
     % returned  must be of dimensions 1 x popSize.
